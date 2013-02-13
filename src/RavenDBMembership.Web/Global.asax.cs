@@ -51,14 +51,15 @@ namespace RavenDBMembership.Web
 			Container.Register(Component
 				.For<IDocumentStore>()
 				.UsingFactoryMethod(() => GetDocumentStore())
-				.LifeStyle.Singleton);
+				.LifestyleSingleton()
+            );
 
 			// MVC components
 			ControllerBuilder.Current.SetControllerFactory(new WindsorControllerFactory(Container));
 			Container.Register(AllTypes
 				.FromAssembly(Assembly.GetExecutingAssembly())
 				.BasedOn<IController>()
-				.Configure(c => c.LifeStyle.Transient)
+				.LifestyleTransient()
 			);
 
 			AreaRegistration.RegisterAllAreas();
