@@ -36,10 +36,11 @@ namespace RavenDBMembership.Provider
 
         public override void Initialize(string name, NameValueCollection config)
         {
-            if (config.Keys.Cast<string>().Contains("minRequiredPasswordLength"))
-            {
+            if(config.Keys.Cast<string>().Contains("minRequiredPasswordLength"))
                 _minRequiredPasswordLength = int.Parse(config["minRequiredPasswordLength"]);
-            }
+
+            if(config.Keys.Cast<string>().Contains("applicationName"))
+                this.ApplicationName = config["applicationName"];
             
             // Try to find an IDocumentStore via Common Service Locator. 
             try

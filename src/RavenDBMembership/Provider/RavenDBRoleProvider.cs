@@ -30,8 +30,11 @@ namespace RavenDBMembership.Provider
 
 		public override void Initialize(string name, NameValueCollection config)
 		{
-			// Try to find an IDocumentStore via Common Service Locator. 
-			try
+            if(config.Keys.Cast<string>().Contains("applicationName"))
+                this.ApplicationName = config["applicationName"];			
+            
+            // Try to find an IDocumentStore via Common Service Locator. 
+            try
 			{
 				var locator = ServiceLocator.Current;
 				if (locator != null)
