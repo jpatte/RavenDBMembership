@@ -327,10 +327,10 @@ namespace RavenDBMembership.Providers
 
         private MembershipCreateStatus InterpretConcurrencyException(string username, string email, ConcurrencyException e)
         {
-            if(e.Message.Contains("username/" + username))
+            if(e.Message.Contains(User.GenerateId(this.ApplicationName, username)))
                 return MembershipCreateStatus.DuplicateUserName;
 
-            if(e.Message.Contains("email/" + email))
+            if(e.Message.Contains(UniqueFieldConstraint.GenerateId(this.ApplicationName, EmailConstraintName, email)))
                 return MembershipCreateStatus.DuplicateEmail;
 
             return MembershipCreateStatus.ProviderError;
