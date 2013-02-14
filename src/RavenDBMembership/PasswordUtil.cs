@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Security.Cryptography;
@@ -16,9 +17,9 @@ namespace RavenDBMembership
 			return Convert.ToBase64String(saltBytes);
 		}
 
-		public static string HashPassword(string pass, string salt)
+		public static string HashPassword(string password, string salt)
 		{
-			byte[] bytes = Encoding.Unicode.GetBytes(pass);
+            byte[] bytes = Encoding.Unicode.GetBytes(password);
 			byte[] src = Encoding.Unicode.GetBytes(salt);
 			byte[] dst = new byte[src.Length + bytes.Length];
 			Buffer.BlockCopy(src, 0, dst, 0, src.Length);

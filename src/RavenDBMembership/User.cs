@@ -7,7 +7,9 @@ namespace RavenDBMembership
 {
 	public class User
 	{
-		public string Id { get; set; }
+        private const string DefaultNameSpace = "authorization/users/";
+        
+        public string Id { get; set; }
 		public string ApplicationName { get; set; }
 		public string Username { get; set; }
 		public string PasswordHash { get; set; }
@@ -21,7 +23,7 @@ namespace RavenDBMembership
 		public User()
 		{
 			Roles = new List<string>();
-			Id = "authorization/users/"; // db assigns id
+            Id = DefaultNameSpace; // db will append id
 		}
 	}
 }

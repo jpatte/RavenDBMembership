@@ -11,62 +11,50 @@ namespace RavenDBMembership.Provider
 {
     public abstract class MembershipProviderValidated : MembershipProvider
     {
-        public abstract MembershipUser CheckedCreateUser(string username, string password, string email,
-                                                         string passwordQuestion, string passwordAnswer, bool isApproved,
-                                                         object providerUserKey, out MembershipCreateStatus status);
+        public abstract MembershipUser CreateUserSafe(string username, string password, string email,
+            string passwordQuestion, string passwordAnswer, bool isApproved, object providerUserKey, out MembershipCreateStatus status);
         public abstract bool CheckPassword(string username, string password, bool updateLastLogin);
-        public abstract bool CheckedChangePassword(string username, string oldPassword, string newPassword);
-        public abstract bool CheckedDeleteUser(string username, bool deleteAllRelatedData);
+        public abstract bool ChangePasswordSafe(string username, string oldPassword, string newPassword);
+        public abstract bool DeleteUserSafe(string username, bool deleteAllRelatedData);
 
-        public override MembershipUser CreateUser(string username, string password, string email, string passwordQuestion, string passwordAnswer, bool isApproved, object providerUserKey, out MembershipCreateStatus status)
+        private MembershipCreateStatus ValidateUserCreationArgs(string username, string password, string email, string passwordQuestion, 
+            string passwordAnswer, bool isApproved, object providerUserKey)
         {
-            if (!SecUtility.ValidateParameter(ref password, true, true, false, 0x80))
-            {
-                status = MembershipCreateStatus.InvalidPassword;
-                return null;
-            }
-            if (!SecUtility.ValidateParameter(ref username, true, true, true, 0x100))
-            {
-                status = MembershipCreateStatus.InvalidUserName;
-                return null;
-            }
-            if (!SecUtility.ValidateParameter(ref email, this.RequiresUniqueEmail, this.RequiresUniqueEmail, false, 0x100))
-            {
-                status = MembershipCreateStatus.InvalidEmail;
-                return null;
-            }
-            if (password.Length < this.MinRequiredPasswordLength)
-            {
-                status = MembershipCreateStatus.InvalidPassword;
-                return null;
-            }
-            int num = 0;
-            for (int i = 0; i < password.Length; i++)
-            {
-                if (!char.IsLetterOrDigit(password, i))
-                {
-                    num++;
-                }
-            }
-            if (num < this.MinRequiredNonAlphanumericCharacters)
-            {
-                status = MembershipCreateStatus.InvalidPassword;
-                return null;
-            }
-            if ((this.PasswordStrengthRegularExpression.Length > 0) && !Regex.IsMatch(password, this.PasswordStrengthRegularExpression))
-            {
-                status = MembershipCreateStatus.InvalidPassword;
-                return null;
-            }
-            ValidatePasswordEventArgs e = new ValidatePasswordEventArgs(username, password, true);
-            this.OnValidatingPassword(e);
-            if (e.Cancel)
-            {
-                status = MembershipCreateStatus.InvalidPassword;
-                return null;
-            }
+            if(!SecUtility.ValidateParameter(ref password, true, true, false, 0x80))
+                return MembershipCreateStatus.InvalidPassword;
 
-            return CheckedCreateUser(username, password, email, passwordQuestion, passwordAnswer, isApproved, providerUserKey, out status);
+            if(!SecUtility.ValidateParameter(ref username, true, true, true, 0x100))
+                return MembershipCreateStatus.InvalidUserName;
+
+            if(!SecUtility.ValidateParameter(ref email, this.RequiresUniqueEmail, this.RequiresUniqueEmail, false, 0x100))
+                return MembershipCreateStatus.InvalidEmail;
+
+            if(password.Length < this.MinRequiredPasswordLength)
+                return MembershipCreateStatus.InvalidPassword;
+
+            int numNonAlphanumericCharacters = password.Where((t, i) => !char.IsLetterOrDigit(password, i)).Count();
+            if(numNonAlphanumericCharacters < this.MinRequiredNonAlphanumericCharacters)
+                return MembershipCreateStatus.InvalidPassword;
+
+            if(this.PasswordStrengthRegularExpression.Length > 0 && !Regex.IsMatch(password, this.PasswordStrengthRegularExpression))
+                return MembershipCreateStatus.InvalidPassword;
+
+            var e = new ValidatePasswordEventArgs(username, password, true);
+            this.OnValidatingPassword(e);
+            if(e.Cancel)
+                return MembershipCreateStatus.InvalidPassword;
+
+            return MembershipCreateStatus.Success;
+        }
+
+        public override MembershipUser CreateUser(string username, string password, string email, string passwordQuestion, 
+            string passwordAnswer, bool isApproved, object providerUserKey, out MembershipCreateStatus status)
+        {
+            status = this.ValidateUserCreationArgs(username, password, email, passwordQuestion, passwordAnswer, isApproved, providerUserKey);
+            if(status != MembershipCreateStatus.Success)
+                return null;
+
+            return this.CreateUserSafe(username, password, email, passwordQuestion, passwordAnswer, isApproved, providerUserKey, out status);
         }
 
         public override bool ChangePassword(string username, string oldPassword, string newPassword)
@@ -75,52 +63,39 @@ namespace RavenDBMembership.Provider
             SecUtility.CheckParameter(ref oldPassword, true, true, false, 0x80, "oldPassword");
             SecUtility.CheckParameter(ref newPassword, true, true, false, 0x80, "newPassword");
 
-            if (!CheckPassword(username, oldPassword, false))
-            {
+            if(!this.CheckPassword(username, oldPassword, false))
                 return false;
-            }
-            if (newPassword.Length < this.MinRequiredPasswordLength)
-            {
+
+            if(newPassword.Length < this.MinRequiredPasswordLength)
                 throw new ArgumentException("Password is shorter than the minimum " + this.MinRequiredPasswordLength, "newPassword");
-            }
-            int num3 = 0;
-            for (int i = 0; i < newPassword.Length; i++)
-            {
-                if (!char.IsLetterOrDigit(newPassword, i))
-                {
-                    num3++;
-                }
-            }
-            if (num3 < this.MinRequiredNonAlphanumericCharacters)
+
+            int numNonAlphanumericCharacters = newPassword.Where((t, i) => !char.IsLetterOrDigit(newPassword, i)).Count();
+            if(numNonAlphanumericCharacters < this.MinRequiredNonAlphanumericCharacters)
             {
                 throw new ArgumentException(
-                    SR.Password_need_more_non_alpha_numeric_chars_1.WithParameters(MinRequiredNonAlphanumericCharacters),
-                    "newPassword");
+                    SR.Password_need_more_non_alpha_numeric_chars_1.WithParameters(MinRequiredNonAlphanumericCharacters), "newPassword");
             }
-            if ((this.PasswordStrengthRegularExpression.Length > 0) && !Regex.IsMatch(newPassword, this.PasswordStrengthRegularExpression))
-            {
-                throw new ArgumentException(SR.Password_does_not_match_regular_expression.WithParameters(),
-                    "newPassword");
-            }
-            ValidatePasswordEventArgs e = new ValidatePasswordEventArgs(username, newPassword, false);
+
+            if(this.PasswordStrengthRegularExpression.Length > 0 && !Regex.IsMatch(newPassword, this.PasswordStrengthRegularExpression))
+                throw new ArgumentException(SR.Password_does_not_match_regular_expression.WithParameters(), "newPassword");
+
+            var e = new ValidatePasswordEventArgs(username, newPassword, false);
             this.OnValidatingPassword(e);
-            if (e.Cancel)
+            if(e.Cancel)
             {
-                if (e.FailureInformation != null)
-                {
+                if(e.FailureInformation != null)
                     throw e.FailureInformation;
-                }
                 throw new ArgumentException(SR.Membership_Custom_Password_Validation_Failure.WithParameters(), "newPassword");
             }
 
-            return CheckedChangePassword(username, oldPassword, newPassword);
+            return this.ChangePasswordSafe(username, oldPassword, newPassword);
         }
 
         public override bool DeleteUser(string username, bool deleteAllRelatedData)
         {
             SecUtility.CheckParameter(ref username, true, true, true, 0x100, "username");
 
-            return CheckedDeleteUser(username, deleteAllRelatedData);
+            return this.DeleteUserSafe(username, deleteAllRelatedData);
         }
     }
 }

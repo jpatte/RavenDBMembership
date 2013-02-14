@@ -2,14 +2,14 @@
 
 namespace RavenDBMembership.Provider
 {
-    public class RavenDBMembershipProviderThatDisposesStore : Provider.RavenDBMembershipProvider, IDisposable
+    public class RavenDBMembershipProviderThatDisposesStore : RavenDBMembershipProvider, IDisposable
     {
         public void Dispose()
         {
-            if (DocumentStore != null)
-                DocumentStore.Dispose();
+            if(this.DocumentStore != null)
+                this.DocumentStore.Dispose();
 
-            DocumentStore = null;
+            this.DocumentStore = null;
         }
     }
 }
