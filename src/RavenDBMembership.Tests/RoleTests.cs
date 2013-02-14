@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RavenDBMembership.Entities;
+using RavenDBMembership.Providers;
 using Xunit;
-using RavenDBMembership.Provider;
 using System.Threading;
 
 namespace RavenDBMembership.Tests
@@ -59,32 +60,32 @@ namespace RavenDBMembership.Tests
 			}
 		}
 
-		[Fact]
-		public void StoreRoleWithParentRole()
-		{
-			var parentRole = new Role("Users", null);
-			var childRole = new Role("Contributors", parentRole);
+        //[Fact]
+        //public void StoreRoleWithParentRole()
+        //{
+        //    var parentRole = new Role("Users", null);
+        //    var childRole = new Role("Contributors", parentRole);
 
-			using (var store = NewInMemoryStore())
-			{
-				using (var session = store.OpenSession())
-				{
-					session.Store(parentRole);
-					session.Store(childRole);
-					session.SaveChanges();
-				}
+        //    using (var store = NewInMemoryStore())
+        //    {
+        //        using (var session = store.OpenSession())
+        //        {
+        //            session.Store(parentRole);
+        //            session.Store(childRole);
+        //            session.SaveChanges();
+        //        }
 
-				Thread.Sleep(500);
+        //        Thread.Sleep(500);
 
-				using (var session = store.OpenSession())
-				{
-					var roles = session.Query<Role>().ToList();
-					Assert.Equal(2, roles.Count);
-					var childRoleFromDb = roles.Single(r => r.ParentRoleId != null);
-					Assert.Equal("authorization/roles/users/contributors", childRoleFromDb.Id.ToLowerInvariant());
-				}
-			}
-		}
+        //        using (var session = store.OpenSession())
+        //        {
+        //            var roles = session.Query<Role>().ToList();
+        //            Assert.Equal(2, roles.Count);
+        //            var childRoleFromDb = roles.Single(r => r.ParentRoleId != null);
+        //            Assert.Equal("authorization/roles/users/contributors", childRoleFromDb.Id.ToLowerInvariant());
+        //        }
+        //    }
+        //}
 
 		[Fact]
 		public void RoleExists()

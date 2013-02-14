@@ -11,7 +11,7 @@ using Raven.Client;
 using Raven.Client.Embedded;
 using Raven.Database.Config;
 using RavenDBMembership.IntegrationTests.ProviderFixtures;
-using RavenDBMembership.Provider;
+using RavenDBMembership.Providers;
 
 namespace RavenDBMembership.IntegrationTests
 {

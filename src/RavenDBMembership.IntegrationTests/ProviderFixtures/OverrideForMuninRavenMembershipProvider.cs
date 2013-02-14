@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Web.Security;
 using Raven.Client.Embedded;
-using RavenDBMembership.Provider;
+using RavenDBMembership.Providers;
 
 namespace RavenDBMembership.IntegrationTests.ProviderFixtures
 {

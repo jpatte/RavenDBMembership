@@ -3,7 +3,7 @@ using System.Configuration.Provider;
 using System.Linq;
 using System.Web.Security;
 using NUnit.Framework;
-using RavenDBMembership.Provider;
+using RavenDBMembership.Providers;
 
 namespace RavenDBMembership.IntegrationTests
 {
