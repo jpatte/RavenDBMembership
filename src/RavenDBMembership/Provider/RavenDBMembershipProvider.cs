@@ -105,7 +105,7 @@ namespace RavenDBMembership.Provider
             user.PasswordHash = PasswordUtil.HashPassword(password, user.PasswordSalt);
             user.Email = email;
             user.ApplicationName = this.ApplicationName;
-            user.DateCreated = DateTime.Now;
+            user.DateCreated = DateTime.UtcNow;
 
             using (var session = this.DocumentStore.OpenSession())
             {
@@ -122,7 +122,7 @@ namespace RavenDBMembership.Provider
                     status = MembershipCreateStatus.Success;
 
                     return new MembershipUser(_providerName, username, user.Id, email, null, null, true, false, user.DateCreated,
-                        new DateTime(1900, 1, 1), new DateTime(1900, 1, 1), DateTime.Now, new DateTime(1900, 1, 1));
+                        new DateTime(1900, 1, 1), new DateTime(1900, 1, 1), DateTime.UtcNow, new DateTime(1900, 1, 1));
                 }
                 catch (ConcurrencyException e)
                 {
@@ -407,7 +407,7 @@ namespace RavenDBMembership.Provider
                 {
                     if (updateLastLogin)
                     {
-                        user.DateLastLogin = DateTime.Now;
+                        user.DateLastLogin = DateTime.UtcNow;
                     }
                     session.SaveChanges();
                     return true;
