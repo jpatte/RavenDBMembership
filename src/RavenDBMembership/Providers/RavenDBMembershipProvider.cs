@@ -15,6 +15,8 @@ namespace RavenDBMembership.Providers
 {
     public class RavenDBMembershipProvider : MembershipProviderValidated
     {
+        private const string EmailConstraintName = "email";
+
         private string _providerName = "RavenDBMembership";
         private IDocumentStore _documentStore;
         private int _minRequiredPasswordLength = 7;
@@ -71,9 +73,7 @@ namespace RavenDBMembership.Providers
         {
             using(var session = this.DocumentStore.OpenSession())
             {
-                var user = session.Query<User>()
-                    .SingleOrDefault(u => u.ApplicationName == this.ApplicationName && u.Username == username);
-
+                var user = this.LoadUser(session, username);
                 if(user == null || user.PasswordHash != PasswordUtil.HashPassword(oldPassword, user.PasswordSalt))
                     throw new MembershipPasswordException("Invalid username or old password.");
 
@@ -123,13 +123,11 @@ namespace RavenDBMembership.Providers
                 try
                 {
                     session.Store(user);
-                    session.Store(new UniqueFieldConstraint { Id = "username/" + user.Username });
-                    session.Store(new UniqueFieldConstraint { Id = "email/" + user.Email });
+                    session.Store(new UniqueFieldConstraint(this.ApplicationName, EmailConstraintName, user.Email));
 
                     session.SaveChanges();
 
                     status = MembershipCreateStatus.Success;
-
                     return this.UserToMembershipUser(user, lastPasswordChangedDate: DateTime.UtcNow);
                 }
                 catch(ConcurrencyException e)
@@ -151,12 +149,12 @@ namespace RavenDBMembership.Providers
             {
                 try
                 {
-                    var user = this.LoadUser(session, u => u.Username == username, waitForNonStaleResults: true);
+                    var user = this.LoadUser(session, username);
                     if(user == null)
                         throw new NullReferenceException("The user could not be deleted.");
 
-                    session.Delete(session.Load<UniqueFieldConstraint>("username/" + user.Username));
-                    session.Delete(session.Load<UniqueFieldConstraint>("email/" + user.Email));
+                    session.Delete(session.Load<UniqueFieldConstraint>(
+                        UniqueFieldConstraint.GenerateId(this.ApplicationName, EmailConstraintName, user.Email)));
 
                     session.Delete(user);
                     session.SaveChanges();
@@ -172,12 +170,14 @@ namespace RavenDBMembership.Providers
 
         public override MembershipUserCollection FindUsersByEmail(string emailToMatch, int pageIndex, int pageSize, out int totalRecords)
         {
-            return this.FindUsers(u => u.Email.Contains(emailToMatch), pageIndex, pageSize, out totalRecords);
+            // TODO: support partial search instead of limiting to exact match
+            return this.FindUsers(u => u.Email == emailToMatch, pageIndex, pageSize, out totalRecords);
         }
 
         public override MembershipUserCollection FindUsersByName(string usernameToMatch, int pageIndex, int pageSize, out int totalRecords)
         {
-            return this.FindUsers(u => u.Username.Contains(usernameToMatch), pageIndex, pageSize, out totalRecords);
+            // TODO: support partial search instead of limiting to exact match
+            return this.FindUsers(u => u.Username == usernameToMatch, pageIndex, pageSize, out totalRecords);
         }
 
         public override MembershipUserCollection GetAllUsers(int pageIndex, int pageSize, out int totalRecords)
@@ -199,7 +199,7 @@ namespace RavenDBMembership.Providers
         {
             using(var session = this.DocumentStore.OpenSession())
             {
-                var user = this.LoadUser(session, u => u.Username == username, waitForNonStaleResults: true);
+                var user = this.LoadUser(session, username);
                 return user != null ? this.UserToMembershipUser(user) : null;
             }
         }
@@ -230,11 +230,12 @@ namespace RavenDBMembership.Providers
             {
                 try
                 {
-                    var user = this.LoadUser(session, u => u.Username == username);
+                    var user = this.LoadUser(session, username);
                     if(user == null)
                         throw new Exception("The user to reset the password for could not be found.");
 
-                    var newPassword = Membership.GeneratePassword(Math.Max(8, this.MinRequiredPasswordLength), Math.Max(2, this.MinRequiredNonAlphanumericCharacters));
+                    var newPassword = Membership.GeneratePassword(
+                        Math.Max(8, this.MinRequiredPasswordLength), Math.Max(2, this.MinRequiredNonAlphanumericCharacters));
                     user.PasswordSalt = PasswordUtil.CreateRandomSalt();
                     user.PasswordHash = PasswordUtil.HashPassword(newPassword, user.PasswordSalt);
 
@@ -272,19 +273,17 @@ namespace RavenDBMembership.Providers
 
                 try
                 {
-                    var dbUser = this.LoadUser(session, u => u.Username == username);
+                    var dbUser = this.LoadUser(session, username);
                     if(dbUser == null)
                         throw new Exception("The user to update could not be found.");
 
-                    var originalEmail = dbUser.Email;
-
-                    if(originalEmail != user.Email)
+                    if(dbUser.Email != user.Email)
                     {
-                        session.Delete(session.Load<UniqueFieldConstraint>("email/" + dbUser.Email));
-                        session.Store(new UniqueFieldConstraint { Id = "email/" + user.Email });
+                        session.Delete(session.Load<UniqueFieldConstraint>(
+                            UniqueFieldConstraint.GenerateId(this.ApplicationName, EmailConstraintName, dbUser.Email)));
+                        session.Store(new UniqueFieldConstraint(this.ApplicationName, EmailConstraintName, user.Email));
                     }
 
-                    dbUser.Username = user.UserName;
                     dbUser.Email = user.Email;
                     dbUser.DateCreated = user.CreationDate;
                     dbUser.DateLastLogin = user.LastLoginDate;
@@ -314,18 +313,16 @@ namespace RavenDBMembership.Providers
 
             using(var session = this.DocumentStore.OpenSession())
             {
-                var user = this.LoadUser(session, u => u.Username == username, waitForNonStaleResults: true);
+                var user = this.LoadUser(session, username);
+                if(user == null || user.PasswordHash != PasswordUtil.HashPassword(password, user.PasswordSalt))
+                    return false;
 
-                if(user != null && user.PasswordHash == PasswordUtil.HashPassword(password, user.PasswordSalt))
-                {
-                    if(updateLastLogin)
-                        user.DateLastLogin = DateTime.UtcNow;
+                if(updateLastLogin)
+                    user.DateLastLogin = DateTime.UtcNow;
 
-                    session.SaveChanges();
-                    return true;
-                }
+                session.SaveChanges();
+                return true;
             }
-            return false;
         }
 
         private MembershipCreateStatus InterpretConcurrencyException(string username, string email, ConcurrencyException e)
@@ -339,13 +336,9 @@ namespace RavenDBMembership.Providers
             return MembershipCreateStatus.ProviderError;
         }
 
-        private User LoadUser(IDocumentSession session, Func<User, bool> predicate, bool waitForNonStaleResults = false)
+        private User LoadUser(IDocumentSession session,  string userName)
         {
-            var query = session.Query<User>();
-            if(waitForNonStaleResults)
-                query = query.Customize(c => c.WaitForNonStaleResultsAsOfNow());
-
-            return query.Where(u => u.ApplicationName == this.ApplicationName).SingleOrDefault(predicate);
+            return session.Load<User>(User.GenerateId(this.ApplicationName, userName));
         }
 
         private MembershipUserCollection FindUsers(Expression<Func<User, bool>> predicate, int pageIndex, int pageSize, out int totalRecords)

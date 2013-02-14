@@ -1,45 +1,57 @@
 ﻿using System;
+using System.Text;
 
 namespace RavenDBMembership.Entities
 {
     public class Role
     {
-        private const string DefaultNameSpace = "authorization/roles/";
+        private const string DefaultNameSpace = "membership/roles/";
 
         private string _id;
+        private string _applicationName;
+        private string _name;
 
         public string Id
         {
-            get
-            {
-                if(String.IsNullOrEmpty(this._id))
-                    this._id = this.GenerateId();
-                return this._id;
-            }
+            get { return !string.IsNullOrEmpty(this._id) ? this._id : (this._id = GenerateId(this.ApplicationName, this.Name)); }
             set { this._id = value; }
         }
 
-        public string ApplicationName { get; set; }
-        public string Name { get; set; }
-        public string ParentRoleId { get; set; }
-
-        public Role(string name, Role parentRole)
+        public string ApplicationName
         {
-            this.Name = name;
-            if(parentRole != null)
-                this.ParentRoleId = parentRole.Id;
+            get { return _applicationName; }
+            set
+            {
+                _applicationName = value;
+                _id = null;
+            }
         }
 
-        private string GenerateId()
+        public string Name
         {
-            if(!String.IsNullOrEmpty(this.ParentRoleId))
-                return this.ParentRoleId + "/" + this.Name;
+            get { return _name; }
+            set
+            {
+                _name = value;
+                _id = null;
+            }
+        }
 
-            // Also use application name for ID generation so we can have multiple roles with the same name.
-            if(!String.IsNullOrEmpty(this.ApplicationName))
-                return DefaultNameSpace + this.ApplicationName.Replace("/", String.Empty) + "/" + this.Name;
+        public Role(string applicationName, string name)
+        {
+            this.ApplicationName = applicationName;
+            this.Name = name;
+        }
 
-            return DefaultNameSpace + this.Name;
+        public static string GenerateId(string applicationName, string roleName)
+        {
+            var idBuilder = new StringBuilder();
+            idBuilder.Append(DefaultNameSpace);
+
+            if(!String.IsNullOrEmpty(applicationName))
+                idBuilder.Append(applicationName.Replace("-", String.Empty)).Append("/");
+
+            return idBuilder.Append(roleName).ToString();
         }
     }
 }

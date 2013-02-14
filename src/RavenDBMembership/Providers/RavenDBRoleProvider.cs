@@ -57,14 +57,12 @@ namespace RavenDBMembership.Providers
             {
                 try
                 {
-                    var users = session.Query<User>()
-                        .Where(u => u.ApplicationName == this.ApplicationName && u.Username.In(usernames))
-                        .ToArray();
+                    var userIds = usernames.Select(name => User.GenerateId(this.ApplicationName, name));
+                    var users = session.Load<User>(userIds).Where(u => u != null);
 
-                    var roleIds = session.Query<Role>()
-                        .Where(u => u.ApplicationName == this.ApplicationName && u.Name.In(roleNames))
-                        .Select(r => r.Id)
-                        .ToArray();
+                    var roleIds = roleNames.Select(name => Role.GenerateId(this.ApplicationName, name)).ToArray();
+                    var roles = session.Load<Role>(roleIds).Where(r => r != null); // load roles to make sure they exist
+                    roleIds = roles.Select(r => r.Id).ToArray();
 
                     foreach(var user in users)
                         user.Roles = user.Roles.Union(roleIds).ToList();
@@ -85,9 +83,7 @@ namespace RavenDBMembership.Providers
             {
                 try
                 {
-                    var role = new Role(roleName, null);
-                    role.ApplicationName = this.ApplicationName;
-
+                    var role = new Role(this.ApplicationName, roleName);
                     session.Store(role);
                     session.SaveChanges();
                 }
@@ -105,15 +101,14 @@ namespace RavenDBMembership.Providers
             {
                 try
                 {
-                    var role = session.Query<Role>()
-                        .SingleOrDefault(r => r.ApplicationName == this.ApplicationName && r.Name == roleName);
+                    var role = this.LoadRole(session, roleName);
                     if(role == null)
                         return false;
 
-                    // also find users that have this role
+                    // find users that have this role
                     var users = session.Query<User>()
                         .Where(u => u.ApplicationName == this.ApplicationName && u.Roles.Any(roleId => roleId == role.Id))
-                        .ToList();
+                        .ToArray();
 
                     if(throwOnPopulatedRole && users.Any())
                         throw new Exception(String.Format("Role {0} contains members and cannot be deleted.", role.Name));
@@ -137,13 +132,12 @@ namespace RavenDBMembership.Providers
         {
             using(var session = this.DocumentStore.OpenSession())
             {
-                var role = session.Query<Role>()
-                    .SingleOrDefault(r => r.ApplicationName == this.ApplicationName && r.Name == roleName);
+                var role = this.LoadRole(session, roleName);
                 if(role == null)
                     return null;
 
                 return session.Query<User>()
-                    .Where(u => u.Roles.Any(r => r == role.Id) && u.Username.Contains(usernameToMatch))
+                    .Where(u => u.ApplicationName == this.ApplicationName && u.Username.Contains(usernameToMatch) && u.Roles.Any(r => r == role.Id))
                     .Select(u => u.Username)
                     .ToArray();
             }
@@ -164,16 +158,12 @@ namespace RavenDBMembership.Providers
         {
             using(var session = this.DocumentStore.OpenSession())
             {
-                var userRoleIds = session.Query<User>()
-                    .Where(u => u.ApplicationName == this.ApplicationName && u.Username == username)
-                    .Select(u => u.Roles)
-                    .Single();
-
-                if(!userRoleIds.Any())
+                var user = session.Load<User>(User.GenerateId(this.ApplicationName, username));
+                if(user == null || !user.Roles.Any())
                     return new string[0];
 
-                return session.Query<Role>()
-                    .Where(r => r.ApplicationName == this.ApplicationName && r.Id.In(userRoleIds))
+                return session.Load<Role>(user.Roles)
+                    .Where(r => r != null)
                     .Select(r => r.Name)
                     .ToArray();
             }
@@ -183,10 +173,9 @@ namespace RavenDBMembership.Providers
         {
             using(var session = this.DocumentStore.OpenSession())
             {
-                var role = session.Query<Role>()
-                    .SingleOrDefault(r => r.ApplicationName == this.ApplicationName && r.Name == roleName);
+                var role = this.LoadRole(session, roleName);
                 if(role == null)
-                    return null;
+                    return new string[0];
 
                 return session.Query<User>()
                     .Where(u => u.ApplicationName == this.ApplicationName && u.Roles.Any(r => r == role.Id))
@@ -199,12 +188,8 @@ namespace RavenDBMembership.Providers
         {
             using(var session = this.DocumentStore.OpenSession())
             {
-                var user = session.Query<User>()
-                    .SingleOrDefault(u => u.ApplicationName == this.ApplicationName && u.Username == username);
-
-                var role = session.Query<Role>()
-                    .SingleOrDefault(r => r.ApplicationName == this.ApplicationName && r.Name == roleName);
-
+                var user = session.Load<User>(User.GenerateId(this.ApplicationName, username));
+                var role = session.Load<Role>(Role.GenerateId(this.ApplicationName, roleName));
                 return user != null && role != null && user.Roles.Contains(role.Id);
             }
         }
@@ -218,14 +203,12 @@ namespace RavenDBMembership.Providers
             {
                 try
                 {
-                    var users = session.Query<User>()
-                        .Where(u => u.ApplicationName == this.ApplicationName && u.Username.In(usernames))
-                        .ToArray();
+                    var userIds = usernames.Select(name => User.GenerateId(this.ApplicationName, name));
+                    var users = session.Load<User>(userIds).Where(u => u != null);
 
-                    var roleIds = session.Query<Role>()
-                        .Where(u => u.ApplicationName == this.ApplicationName && u.Name.In(roleNames))
-                        .Select(r => r.Id)
-                        .ToArray();
+                    var roleIds = roleNames.Select(name => Role.GenerateId(this.ApplicationName, name)).ToArray();
+                    var roles = session.Load<Role>(roleIds).Where(r => r != null); // load roles to make sure they exist
+                    roleIds = roles.Select(r => r.Id).ToArray();
 
                     foreach(var user in users)
                         user.Roles = user.Roles.Except(roleIds).ToList();
@@ -243,9 +226,12 @@ namespace RavenDBMembership.Providers
         public override bool RoleExists(string roleName)
         {
             using(var session = this.DocumentStore.OpenSession())
-            {
-                return session.Query<Role>().Any(r => r.ApplicationName == this.ApplicationName && r.Name == roleName);
-            }
+                return this.LoadRole(session, roleName) != null;
+        }
+
+        private Role LoadRole(IDocumentSession session, string roleName)
+        {
+            return session.Load<Role>(Role.GenerateId(this.ApplicationName, roleName));
         }
 
         private void LogException(Exception ex)
