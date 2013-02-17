@@ -8,6 +8,7 @@ using Raven.Abstractions.Exceptions;
 using Raven.Client;
 using Microsoft.Practices.ServiceLocation;
 using System.Collections.Specialized;
+using Raven.Client.Document;
 using RavenDBMembership.Entities;
 using RavenDBMembership.Utils;
 
@@ -15,6 +16,8 @@ namespace RavenDBMembership.Providers
 {
     public class RavenDBMembershipProvider : MembershipProviderValidated
     {
+        private const string UsersCollectionName = "MembershipUsers";
+        private const string ConstraintsCollectionName = "MembershipConstraints";
         private const string EmailConstraintName = "email";
 
         private string _providerName = "RavenDBMembership";
@@ -58,7 +61,15 @@ namespace RavenDBMembership.Providers
             {
                 var locator = ServiceLocator.Current;
                 if(locator != null)
+                {
                     this.DocumentStore = locator.GetInstance<IDocumentStore>();
+
+                    var existingConvention = this.DocumentStore.Conventions.FindTypeTagName;
+                    this.DocumentStore.Conventions.FindTypeTagName = type =>
+                        type == typeof(User) ? UsersCollectionName :
+                        type == typeof(UniqueFieldConstraint) ? ConstraintsCollectionName :
+                        existingConvention(type);
+                }
             }
             catch(NullReferenceException) // Swallow Nullreference expection that occurs when there is no current service locator.
             {

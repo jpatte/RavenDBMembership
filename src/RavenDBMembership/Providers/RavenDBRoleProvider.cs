@@ -11,6 +11,8 @@ namespace RavenDBMembership.Providers
 {
     public class RavenDBRoleProvider : RoleProvider
     {
+        private const string RolesCollectionName = "MembershipRoles";
+
         private string _providerName = "RavenDBRole";
         private IDocumentStore _documentStore;
 
@@ -36,7 +38,14 @@ namespace RavenDBMembership.Providers
             {
                 var locator = ServiceLocator.Current;
                 if(locator != null)
+                {
                     this.DocumentStore = locator.GetInstance<IDocumentStore>();
+
+                    var existingConvention = this.DocumentStore.Conventions.FindTypeTagName;
+                    this.DocumentStore.Conventions.FindTypeTagName = type =>
+                        type == typeof(Role) ? RolesCollectionName :
+                        existingConvention(type);
+                }
             }
             catch(NullReferenceException) // Swallow Nullreference expection that occurs when there is no current service locator.
             {
