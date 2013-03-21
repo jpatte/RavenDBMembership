@@ -44,11 +44,13 @@ namespace RavenDBMembership.Entities
 		public string Email { get; set; }
 		public DateTime DateCreated { get; set; }
 		public DateTime? DateLastLogin { get; set; }
-		public IList<string> Roles { get; set; }
+        public IList<string> Roles { get; set; }
+        public bool IsApproved { get; set; }
 
 		public User()
 		{
 			this.Roles = new List<string>();
+		    this.IsApproved = true;
 		}
 
         public static string GenerateId(string applicationName, string username)
