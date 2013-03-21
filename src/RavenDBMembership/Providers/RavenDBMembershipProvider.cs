@@ -124,7 +124,8 @@ namespace RavenDBMembership.Providers
                 PasswordHash = passwordHash,
                 Email = email,
                 ApplicationName = this.ApplicationName,
-                DateCreated = DateTime.UtcNow
+                DateCreated = DateTime.UtcNow,
+                IsApproved = isApproved
             };
 
             using(var session = this.DocumentStore.OpenSession())
@@ -295,6 +296,7 @@ namespace RavenDBMembership.Providers
                         session.Store(new UniqueFieldConstraint(this.ApplicationName, EmailConstraintName, user.Email));
                     }
 
+                    dbUser.IsApproved = user.IsApproved;
                     dbUser.Email = user.Email;
                     dbUser.DateCreated = user.CreationDate;
                     dbUser.DateLastLogin = user.LastLoginDate;
@@ -325,7 +327,7 @@ namespace RavenDBMembership.Providers
             using(var session = this.DocumentStore.OpenSession())
             {
                 var user = this.LoadUser(session, username);
-                if(user == null || user.PasswordHash != PasswordUtil.HashPassword(password, user.PasswordSalt))
+                if(user == null || user.PasswordHash != PasswordUtil.HashPassword(password, user.PasswordSalt) || !user.IsApproved)
                     return false;
 
                 if(updateLastLogin)
@@ -382,7 +384,7 @@ namespace RavenDBMembership.Providers
                 email: user.Email,
                 passwordQuestion: null,
                 comment: null,
-                isApproved: true,
+                isApproved: user.IsApproved,
                 isLockedOut: false,
                 creationDate: user.DateCreated,
                 lastLoginDate: user.DateLastLogin ?? defaultDate,
