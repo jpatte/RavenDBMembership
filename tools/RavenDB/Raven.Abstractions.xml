@@ -9652,6 +9652,12 @@
             </summary>
             <param name="value">The value.</param>
         </member>
+        <member name="M:Raven.Json.Linq.RavenJValue.#ctor(System.Single)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Raven.Json.Linq.RavenJValue"/> class with the given value.
+            </summary>
+            <param name="value">The value.</param>
+        </member>
         <member name="M:Raven.Json.Linq.RavenJValue.#ctor(System.DateTime)">
             <summary>
             Initializes a new instance of the <see cref="T:Raven.Json.Linq.RavenJValue"/> class with the given value.

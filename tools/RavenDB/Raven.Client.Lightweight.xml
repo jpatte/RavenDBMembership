@@ -583,6 +583,11 @@
             </summary>
             <param name="operationsHeaders">The operations headers.</param>
         </member>
+        <member name="M:Raven.Client.Connection.HttpJsonRequest.AddOperationHeader(System.String,System.String)">
+            <summary>
+            Adds the operation header.
+            </summary>
+        </member>
         <member name="M:Raven.Client.Connection.HttpJsonRequest.CalculateDuration">
             <summary>
             The request duration
@@ -2168,12 +2173,12 @@
             </summary>
             <param name="waitTimeout">The wait timeout.</param>
         </member>
-        <member name="M:Raven.Client.IDocumentQueryCustomization.WithinRadiusOf(System.Double,System.Double,System.Double)">
+        <member name="M:Raven.Client.IDocumentQueryCustomization.WithinRadiusOf(System.Double,System.Double,System.Double,Raven.Abstractions.Indexing.SpatialUnits)">
             <summary>
             Filter matches to be inside the specified radius
             </summary>
         </member>
-        <member name="M:Raven.Client.IDocumentQueryCustomization.WithinRadiusOf(System.String,System.Double,System.Double,System.Double)">
+        <member name="M:Raven.Client.IDocumentQueryCustomization.WithinRadiusOf(System.String,System.Double,System.Double,System.Double,Raven.Abstractions.Indexing.SpatialUnits)">
             <summary>
             Filter matches to be inside the specified radius
             </summary>
@@ -2746,15 +2751,16 @@
             When using spatial queries, instruct the query to sort by the distance from the origin point
             </summary>
         </member>
-        <member name="M:Raven.Client.Document.AbstractDocumentQuery`2.Raven#Client#IDocumentQueryCustomization#WithinRadiusOf(System.Double,System.Double,System.Double)">
+        <member name="M:Raven.Client.Document.AbstractDocumentQuery`2.Raven#Client#IDocumentQueryCustomization#WithinRadiusOf(System.Double,System.Double,System.Double,Raven.Abstractions.Indexing.SpatialUnits)">
             <summary>
               Filter matches to be inside the specified radius
             </summary>
             <param name = "radius">The radius.</param>
             <param name = "latitude">The latitude.</param>
             <param name = "longitude">The longitude.</param>
+            <param name = "radiusUnits">The units of the <paramref name="radius"/></param>
         </member>
-        <member name="M:Raven.Client.Document.AbstractDocumentQuery`2.GenerateQueryWithinRadiusOf(System.String,System.Double,System.Double,System.Double,System.Double)">
+        <member name="M:Raven.Client.Document.AbstractDocumentQuery`2.GenerateQueryWithinRadiusOf(System.String,System.Double,System.Double,System.Double,System.Double,Raven.Abstractions.Indexing.SpatialUnits)">
             <summary>
               Filter matches to be inside the specified radius
             </summary>
@@ -3530,22 +3536,24 @@
               http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Proximity%20Searches
             </remarks>
         </member>
-        <member name="M:Raven.Client.IDocumentQueryBase`2.WithinRadiusOf(System.Double,System.Double,System.Double)">
+        <member name="M:Raven.Client.IDocumentQueryBase`2.WithinRadiusOf(System.Double,System.Double,System.Double,Raven.Abstractions.Indexing.SpatialUnits)">
             <summary>
               Filter matches to be inside the specified radius
             </summary>
-            <param name = "radius">The radius in KM.</param>
+            <param name = "radius">The radius.</param>
             <param name = "latitude">The latitude.</param>
             <param name = "longitude">The longitude.</param>
+            <param name = "radiusUnits">The units of the <paramref name="radius"/>.</param>
         </member>
-        <member name="M:Raven.Client.IDocumentQueryBase`2.WithinRadiusOf(System.String,System.Double,System.Double,System.Double)">
+        <member name="M:Raven.Client.IDocumentQueryBase`2.WithinRadiusOf(System.String,System.Double,System.Double,System.Double,Raven.Abstractions.Indexing.SpatialUnits)">
             <summary>
               Filter matches to be inside the specified radius
             </summary>
             <param name="fieldName">The field name for the radius</param>
-            <param name = "radius">The radius in KM.</param>
+            <param name = "radius">The radius.</param>
             <param name = "latitude">The latitude.</param>
             <param name = "longitude">The longitude.</param>
+            <param name = "radiusUnits">The units of the <paramref name="radius"/>.</param>
         </member>
         <member name="M:Raven.Client.IDocumentQueryBase`2.RelatesToShape(System.String,System.String,Raven.Abstractions.Indexing.SpatialRelation,System.Double)">
             <summary>
@@ -4125,15 +4133,16 @@
             http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Proximity%20Searches
             </remarks>
         </member>
-        <member name="M:Raven.Client.Document.AsyncDocumentQuery`1.Raven#Client#IDocumentQueryBase{T@Raven#Client#IAsyncDocumentQuery{T}}#WithinRadiusOf(System.Double,System.Double,System.Double)">
+        <member name="M:Raven.Client.Document.AsyncDocumentQuery`1.Raven#Client#IDocumentQueryBase{T@Raven#Client#IAsyncDocumentQuery{T}}#WithinRadiusOf(System.Double,System.Double,System.Double,Raven.Abstractions.Indexing.SpatialUnits)">
             <summary>
             Filter matches to be inside the specified radius
             </summary>
             <param name="radius">The radius.</param>
             <param name="latitude">The latitude.</param>
             <param name="longitude">The longitude.</param>
+            <param name="radiusUnits">The units of the <paramref name="radius"/>.</param>
         </member>
-        <member name="M:Raven.Client.Document.AsyncDocumentQuery`1.Raven#Client#IDocumentQueryBase{T@Raven#Client#IAsyncDocumentQuery{T}}#WithinRadiusOf(System.String,System.Double,System.Double,System.Double)">
+        <member name="M:Raven.Client.Document.AsyncDocumentQuery`1.Raven#Client#IDocumentQueryBase{T@Raven#Client#IAsyncDocumentQuery{T}}#WithinRadiusOf(System.String,System.Double,System.Double,System.Double,Raven.Abstractions.Indexing.SpatialUnits)">
             <summary>
             Filter matches to be inside the specified radius
             </summary>
@@ -7037,21 +7046,23 @@
             http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Proximity%20Searches
             </remarks>
         </member>
-        <member name="M:Raven.Client.Document.DocumentQuery`1.WithinRadiusOf(System.Double,System.Double,System.Double)">
+        <member name="M:Raven.Client.Document.DocumentQuery`1.WithinRadiusOf(System.Double,System.Double,System.Double,Raven.Abstractions.Indexing.SpatialUnits)">
             <summary>
             Filter matches to be inside the specified radius
             </summary>
             <param name="radius">The radius.</param>
             <param name="latitude">The latitude.</param>
             <param name="longitude">The longitude.</param>
+            <param name="radiusUnits">The units of the <paramref name="radius"/>.</param>
         </member>
-        <member name="M:Raven.Client.Document.DocumentQuery`1.GenerateQueryWithinRadiusOf(System.String,System.Double,System.Double,System.Double,System.Double)">
+        <member name="M:Raven.Client.Document.DocumentQuery`1.GenerateQueryWithinRadiusOf(System.String,System.Double,System.Double,System.Double,System.Double,Raven.Abstractions.Indexing.SpatialUnits)">
             <summary>
               Filter matches to be inside the specified radius
             </summary>
             <param name = "radius">The radius.</param>
             <param name = "latitude">The latitude.</param>
             <param name = "longitude">The longitude.</param>
+            <param name = "radiusUnits">The units of the <paramref name="radius"/>.</param>
         </member>
         <member name="M:Raven.Client.Document.DocumentQuery`1.Raven#Client#IDocumentQueryBase{T@Raven#Client#IDocumentQuery{T}}#SortByDistance">
             <summary>
@@ -7892,8 +7903,7 @@
         </member>
         <member name="F:Raven.Client.Document.FailoverBehavior.AllowReadsFromSecondariesAndWritesToSecondaries">
             <summary>
-            Allow to read from the secondary server(s), but immediately fail writes
-            to the secondary server(s).
+            Allow to read from the secondary server(s), and allow writes to the secondary server(s).
             </summary>
             <remarks>
             Choosing this option requires that you'll have some way of propagating changes
