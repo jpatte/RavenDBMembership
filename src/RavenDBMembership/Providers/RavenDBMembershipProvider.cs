@@ -359,12 +359,14 @@ namespace RavenDBMembership.Providers
             IEnumerable<User> pagedUsers;
             using(var session = this.DocumentStore.OpenSession())
             {
+                RavenQueryStatistics stats;
                 var users = session.Query<User>()
+                    .Statistics(out stats)
                     .Where(u => u.ApplicationName == this.ApplicationName);
                 if(predicate != null)
                     users = users.Where(predicate);
 
-                totalRecords = users.Count();
+                totalRecords = stats.TotalResults;
                 pagedUsers = users.Skip(pageIndex * pageSize).Take(pageSize).ToArray();
             }
 
