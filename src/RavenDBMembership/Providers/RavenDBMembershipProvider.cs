@@ -366,8 +366,8 @@ namespace RavenDBMembership.Providers
                 if(predicate != null)
                     users = users.Where(predicate);
 
-                totalRecords = stats.TotalResults;
                 pagedUsers = users.Skip(pageIndex * pageSize).Take(pageSize).ToArray();
+                totalRecords = stats.TotalResults;
             }
 
             var membershipUsers = new MembershipUserCollection();
